@@ -14,6 +14,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
   List<Exercise> _exercises = [];
   String _searchQuery = '';
   String _selectedFilter = 'Alle';
+  String? _error;
 
   @override
   void initState() {
@@ -22,9 +23,14 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
   }
 
   Future<void> _loadExercises() async {
-    final exercises = await _storage.getExercises();
-    if (!mounted) return;
-    setState(() => _exercises = exercises);
+    try {
+      final exercises = await _storage.getExercises();
+      if (!mounted) return;
+      setState(() => _exercises = exercises);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    }
   }
 
   @override
@@ -32,7 +38,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
     final filters = ['Alle', ...{for (final e in _exercises) e.equipment}];
 
     final filtered = _exercises.where((e) {
-      final q = _searchQuery.toLowerCase();
+      final q = _searchQuery.trim().toLowerCase();
       final matchesQuery = e.name.toLowerCase().contains(q) || e.targetMuscle.toLowerCase().contains(q);
       final matchesFilter = _selectedFilter == 'Alle' || e.equipment == _selectedFilter;
       return matchesQuery && matchesFilter;
@@ -69,6 +75,11 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
               }).toList(),
             ),
           ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: SelectableText('Fehler: $_error'),
+            ),
           const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(

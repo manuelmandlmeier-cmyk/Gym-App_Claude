@@ -16,6 +16,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
   List<Routine> _routines = [];
   List<WorkoutSessionRecord> _history = [];
   bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -24,14 +25,23 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
   }
 
   Future<void> _loadData() async {
-    final routines = await _storage.getRoutines();
-    final history = await _storage.getWorkouts();
-    if (!mounted) return;
-    setState(() {
-      _routines = routines;
-      _history = history;
-      _isLoading = false;
-    });
+    try {
+      final routines = await _storage.getRoutines();
+      final history = await _storage.getWorkouts();
+      if (!mounted) return;
+      setState(() {
+        _routines = routines;
+        _history = history;
+        _error = null;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _startWorkout(Routine routine) async {
@@ -110,6 +120,29 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Fehler beim Laden')),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectableText(_error!),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() => _isLoading = true);
+                  _loadData();
+                },
+                child: const Text('Erneut versuchen'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return Scaffold(

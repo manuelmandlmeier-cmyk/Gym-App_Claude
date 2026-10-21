@@ -28,17 +28,32 @@ class _BodyweightScreenState extends State<BodyweightScreen> {
   }
 
   Future<void> _loadEntries() async {
-    final entries = await _storage.getBodyweightEntries();
+    try {
+      final entries = await _storage.getBodyweightEntries();
+      if (!mounted) return;
+      setState(() => _entries = entries);
+    } catch (e) {
+      _showMessage('Laden fehlgeschlagen: $e');
+    }
+  }
+
+  void _showMessage(String text) {
     if (!mounted) return;
-    setState(() => _entries = entries);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text), duration: const Duration(seconds: 8)));
   }
 
   Future<void> _addWeight() async {
-    final val = double.tryParse(_weightController.text.replaceAll(',', '.'));
-    if (val != null && val > 0) {
+    final val = double.tryParse(_weightController.text.trim().replaceAll(',', '.'));
+    if (val == null || val <= 0) {
+      _showMessage('Bitte ein gültiges Gewicht eingeben, z. B. 85,5');
+      return;
+    }
+    try {
       await _storage.saveBodyweightEntry(BodyweightEntry(date: DateTime.now(), weightKg: val));
       _weightController.clear();
       await _loadEntries();
+    } catch (e) {
+      _showMessage('Speichern fehlgeschlagen: $e');
     }
   }
 
