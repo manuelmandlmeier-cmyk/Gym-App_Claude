@@ -19,10 +19,15 @@ class StorageService {
     _keyMeasurements,
   ];
 
+  Future<SharedPreferences> _prefs() => SharedPreferences.getInstance().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => throw Exception('Speicher antwortet nicht (SharedPreferences, Zeitüberschreitung)'),
+      );
+
   // ---------- Trainings ----------
 
   Future<List<WorkoutSessionRecord>> getWorkouts() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     final String? data = prefs.getString(_keyWorkouts);
     if (data == null) return [];
     final List<dynamic> jsonList = jsonDecode(data);
@@ -32,14 +37,14 @@ class StorageService {
   Future<void> saveWorkout(WorkoutSessionRecord workout) async {
     final workouts = await getWorkouts();
     workouts.insert(0, workout);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     await prefs.setString(_keyWorkouts, jsonEncode(workouts.map((w) => w.toJson()).toList()));
   }
 
   // ---------- Pläne ----------
 
   Future<List<Routine>> getRoutines() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     final String? data = prefs.getString(_keyRoutines);
     if (data == null) {
       return [
@@ -53,14 +58,14 @@ class StorageService {
   }
 
   Future<void> saveRoutines(List<Routine> routines) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     await prefs.setString(_keyRoutines, jsonEncode(routines.map((r) => r.toJson()).toList()));
   }
 
   // ---------- Körpergewicht ----------
 
   Future<List<BodyweightEntry>> getBodyweightEntries() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     final String? data = prefs.getString(_keyBodyweight);
     if (data == null) return [];
     final List<dynamic> jsonList = jsonDecode(data);
@@ -70,14 +75,14 @@ class StorageService {
   Future<void> saveBodyweightEntry(BodyweightEntry entry) async {
     final entries = await getBodyweightEntries();
     entries.insert(0, entry);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     await prefs.setString(_keyBodyweight, jsonEncode(entries.map((e) => e.toJson()).toList()));
   }
 
   // ---------- Übungen ----------
 
   Future<List<Exercise>> getExercises() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     final String? data = prefs.getString(_keyCustomExercises);
     List<Exercise> custom = [];
     if (data != null) {
@@ -88,7 +93,7 @@ class StorageService {
   }
 
   Future<void> addCustomExercise(Exercise exercise) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     final String? data = prefs.getString(_keyCustomExercises);
     List<Exercise> custom = [];
     if (data != null) {
@@ -102,7 +107,7 @@ class StorageService {
   // ---------- Körpermaße & Heatmap ----------
 
   Future<List<BodyMeasurements>> _getMeasurementHistory() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     final String? data = prefs.getString(_keyMeasurements);
     if (data == null) return [];
     final List<dynamic> jsonList = jsonDecode(data);
@@ -119,7 +124,7 @@ class StorageService {
     final history = await _getMeasurementHistory();
     measurements.date = DateTime.now();
     history.insert(0, measurements);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     await prefs.setString(_keyMeasurements, jsonEncode(history.map((m) => m.toJson()).toList()));
   }
 
@@ -206,7 +211,7 @@ class StorageService {
   // ---------- Backup ----------
 
   Future<String> exportAll() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     final data = <String, dynamic>{};
     for (final key in _allKeys) {
       final raw = prefs.getString(key);
@@ -220,7 +225,7 @@ class StorageService {
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Ungültiges Backup-Format');
     }
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     for (final key in _allKeys) {
       final value = decoded[key];
       if (value == null) continue;
