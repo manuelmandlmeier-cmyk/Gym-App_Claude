@@ -7,11 +7,14 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: gym_tracker_app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -36,4 +39,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: gym-tracker-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: gym_tracker_app/build/app/outputs/flutter-apk/app-release.apk
